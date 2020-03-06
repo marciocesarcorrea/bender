@@ -1,0 +1,32 @@
+{
+  "name": "bender",
+  "version": "1.0.0",
+  "description": "Bender Robot",
+  "main": "bin/hubot",
+  "license": "MIT",
+  "private": false,
+  "keywords": [
+    "hubot",
+    "rocketchat",
+    "chatbot",
+    "chat"
+  ],
+  "engines": {
+    "node": ">=8.x",
+    "npm": ">=5.x"
+  },
+  "scripts": {
+    "debug": "node --inspect --inspect-brk -r dotenv/config node_modules/hubot/bin/hubot.js -a rocketchat",
+    "shell": "node -r dotenv/config node_modules/hubot/bin/hubot.js -a shell",
+    "local": "node -r dotenv/config node_modules/hubot/bin/hubot.js -a rocketchat"
+  },
+  "dependencies": {
+    "coffeescript": "^2.4.1",
+    "hubot": "^3.3.2",
+    "hubot-rocketchat": "^2.0.0",
+    "socket.io-client": "^2.2.0"
+  },
+  "devDependencies": {
+    "dotenv": "^8.0.0"
+  }
+}

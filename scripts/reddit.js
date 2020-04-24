@@ -46,6 +46,8 @@ module.exports = async (robot) => {
                   new Date(submission.created_utc * 1000).toString() + '--->' + sub.url + '===' + submission.id + '--->getSubmissions',
                   submission.url
                 )
+              } else {
+                console.log(new Date(submission.created_utc * 1000).toString() + '---> sem atualizações: ' + sub.url, submission.url);
               }
             }
           }
@@ -58,6 +60,8 @@ module.exports = async (robot) => {
                 new Date(newSubmissions[0].created_utc * 1000).toString() + '--->' + sub.url + '--->' + newSubmissions[0].id + '--->getNew',
                 newSubmissions[0].url
               )
+            } else {
+              console.log(new Date(submission.created_utc * 1000).toString() + '---> sem atualizações: ' + sub.url, submission.url);
             }
           }
         }

@@ -47,7 +47,7 @@ module.exports = async (robot) => {
                   submission.url
                 )
               } else {
-                console.log(new Date(submission.created_utc * 1000).toString() + '---> sem atualizações: ' + sub.display_name_prefixed, sub);
+                console.log(new Date().toString() + '---> sem atualizações: ' + sub.display_name_prefixed);
               }
             }
           }
@@ -61,7 +61,7 @@ module.exports = async (robot) => {
                 newSubmissions[0].url
               )
             } else {
-              console.log(new Date(submission.created_utc * 1000).toString() + '---> sem atualizações: ' + sub.url, sub);
+              console.log(new Date().toString() + '---> sem atualizações: ' + sub.url);
             }
           }
         }

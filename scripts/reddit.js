@@ -43,10 +43,7 @@ module.exports = async (robot) => {
               if (!await hasLastUpdates(submission.id, sub.id)) {
                 onRedditUpdates(robot, submission, sub)
                 await persistLastUpdates(submission, sub, true)
-                console.log(
-                  new Date(submission.created_utc * 1000).toString() + '--->' + sub.url + '===' + submission.id + '--->getSubmissions',
-                  submission.url
-                )
+                console.log(`---> ${new Date(submission.created_utc * 1000).toISOString()} - Atualização do usuário: https://reddit.com/${sub.display_name_prefixed}`, submission.url)
               } else {
                 console.log(`---> Sem atualizações do usuário: https://reddit.com/${sub.display_name_prefixed}`);
               }
@@ -57,10 +54,7 @@ module.exports = async (robot) => {
             if (!await hasLastUpdates(newSubmissions[0].id, sub.id)) {
               onRedditUpdates(robot, newSubmissions[0], sub)
               await persistLastUpdates(newSubmissions[0], sub)
-              console.log(
-                new Date(newSubmissions[0].created_utc * 1000).toString() + '--->' + sub.url + '--->' + newSubmissions[0].id + '--->getNew',
-                newSubmissions[0].url
-              )
+              console.log(`---> ${new Date(newSubmissions[0].created_utc * 1000).toISOString()} - Atualização no subreddit: https://reddit.com${sub.url}`, newSubmissions[0].url)
             } else {
               console.log(`---> sem atualizações no subreddit: https://reddit.com${sub.url}`);
             }

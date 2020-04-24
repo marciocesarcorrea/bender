@@ -33,6 +33,7 @@ const onRedditUpdates = (robot, submission, sub) => {
 module.exports = async (robot) => {
   const job = new CronJob(jobTime, async () => {
     try {
+      console.log('=========' + new Date().toString() + '=========');
       const subs = await reddit.client.getSubscriptions();
       if (subs && Array.isArray(subs) && subs.length > 0) {
         for await (sub of subs) {
@@ -47,7 +48,7 @@ module.exports = async (robot) => {
                   submission.url
                 )
               } else {
-                console.log(new Date().toString() + '---> sem atualizações: ' + sub.display_name_prefixed);
+                console.log(`---> Sem atualizações do usuário: https://reddit.com/${sub.display_name_prefixed}`);
               }
             }
           }
@@ -61,7 +62,7 @@ module.exports = async (robot) => {
                 newSubmissions[0].url
               )
             } else {
-              console.log(new Date().toString() + '---> sem atualizações: ' + sub.url);
+              console.log(`---> sem atualizações no subreddit: https://reddit.com/${sub.url}`);
             }
           }
         }

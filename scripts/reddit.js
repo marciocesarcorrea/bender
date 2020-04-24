@@ -62,7 +62,7 @@ module.exports = async (robot) => {
                 newSubmissions[0].url
               )
             } else {
-              console.log(`---> sem atualizações no subreddit: https://reddit.com/${sub.url}`);
+              console.log(`---> sem atualizações no subreddit: https://reddit.com${sub.url}`);
             }
           }
         }

@@ -1,1 +1,1 @@
-module.exports = '0 */2 * * * *'
+module.exports = '0 */20 * * * *'

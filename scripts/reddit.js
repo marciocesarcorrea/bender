@@ -1,8 +1,9 @@
-require('../database')
-const CronJob = require('cron').CronJob
-const reddit = require('../config/reddit')
-const jobTime = require('../config/jobTime')
-const LastUpdates = require('../schemas/LastUpdates')
+require('../database');
+const CronJob = require('cron').CronJob;
+const reddit = require('../config/reddit');
+const gfycat = require('../config/gfycat');
+const jobTime = require('../config/jobTime');
+const LastUpdates = require('../schemas/LastUpdates');
 
 const hasLastUpdates = async (submissionId, subredditId) => {
   const lastSubmission = await LastUpdates.findOne({ submissionId, subredditId })
@@ -19,68 +20,145 @@ const persistLastUpdates = async (submission, subreddit, isSubmissions = false) 
   })
 }
 
-const onRedditUpdates = (robot, submission, sub) => {
-  const reddit = `https://reddit.com/${sub.display_name_prefixed}`;
-  // const name = sub.display_name_prefixed;
-  const url = submission.url;
+const hubotSendSubmission = async (robot, submission, user) => {
+  const attachment = {
+    title: submission.permalink,
+    title_link: `https://reddit.com${submission.permalink}`,
+    author_icon: submission.thumbnail,
+    author_link: `https://reddit.com/${user}`,
+    author_name: user,
+    message_link: `https://reddit.com${submission.permalink}`,
+    text: submission.title,
+    title: submission.title,
+    title_link: `https://reddit.com${submission.permalink}`,
+    title_link_download: true,
+    ts: submission.created_utc ? new Date(submission.created_utc * 1000) : new Date(),
+  };
+  if (String(submission.url).search('gfycat') !== -1) {
+    const url = new URL(submission.url);
+    const video = await gfycat.detailsGif(url.pathname.substr(1));
+    if (video) attachment.video_url = video.mp4Url;
+  } else if (submission.url.match(/\.(gif|jpe?g|tiff|png|webp|bmp)$/i)) {
+    attachment.image_url = submission.url;
+  }
 
-  robot.send(
-    { user: {}, room: 'nata' },
-    `${reddit}\n${url}`
-  )
+  if (attachment.video_url || attachment.image_url) {
+    robot.send(
+      { user: {}, room: 'nata' }, {
+      avatar: submission.thumbnail,
+      text: submission.title,
+      attachments: [attachment]
+    });
+  } else {
+    robot.send(
+      { user: {}, room: 'nata' },
+      `${submission.title}\n${submission.url}`
+    );
+  }
+}
+
+const hubotRespond = async (msg, submission, user) => {
+  const attachment = {
+    title: submission.permalink,
+    title_link: `https://reddit.com${submission.permalink}`,
+    author_icon: submission.thumbnail,
+    author_link: `https://reddit.com/${user}`,
+    author_name: user,
+    message_link: `https://reddit.com${submission.permalink}`,
+    text: submission.title,
+    title: submission.title,
+    title_link: `https://reddit.com${submission.permalink}`,
+    title_link_download: true,
+    ts: new Date(submission.created_utc * 1000),
+  };
+  if (String(submission.url).search('gfycat') !== -1) {
+    const url = new URL(submission.url);
+    const video = await gfycat.detailsGif(url.pathname.substr(1));
+    if (video) attachment.video_url = video.mp4Url;
+  } else {
+    attachment.image_url = submission.url;
+  }
+
+  if (attachment.video_url || attachment.image_url) {
+    msg.reply({
+      avatar: submission.thumbnail,
+      text: submission.title,
+      attachments: [attachment]
+    });
+  } else {
+    msg.reply(`${submission.title}\n${submission.url}`);
+  }
 }
 
 module.exports = async (robot) => {
-  const job = new CronJob(jobTime, async () => {
-    try {
-      console.log('=========' + new Date().toString() + '=========');
-      const subs = await reddit.client.getSubscriptions();
-      if (subs && Array.isArray(subs) && subs.length > 0) {
-        for await (sub of subs) {
-          if (sub.url.match(/\/user\//)) {
-            const submission = await reddit.getSubmissions(sub.display_name_prefixed)
-            if (submission) {
-              if (!await hasLastUpdates(submission.id, sub.id)) {
-                onRedditUpdates(robot, submission, sub)
-                await persistLastUpdates(submission, sub, true)
-                console.log(`---> ${new Date(submission.created_utc * 1000).toISOString()} - Atualização do usuário: https://reddit.com/${sub.display_name_prefixed}`, submission.url)
-              } else {
-                console.log(`---> Sem atualizações do usuário: https://reddit.com/${sub.display_name_prefixed}`);
+  if (process.env.START_JOB === 'true') {
+    const job = new CronJob(jobTime, async () => {
+      try {
+        console.log('=========' + new Date().toString() + '=========');
+        let all;
+        const users = await reddit.client.getSubscriptions();
+        if (!users.isFinished) {
+          const more = await users.fetchAll();
+          all = users.concat(more);
+        } else {
+          all = users;
+        }
+        if (all && Array.isArray(all) && all.length > 0) {
+          console.log(`---> ${new Date().toString()} - Total: ${all.length}`);
+          for await (user of all) {
+            if (user.url.match(/\/user\//) || user.url.match(/\/u\//)) {
+              submission = await reddit.getSubmissions(user.display_name_prefixed);
+              if (submission) {
+                if (!await hasLastUpdates(submission.id, user.id)) {
+                  await hubotSendSubmission(robot, submission, user.display_name_prefixed)
+                  await persistLastUpdates(submission, user, true)
+                  console.log(`---> ${new Date(submission.created_utc * 1000).toISOString()} - Atualização do usuário: https://reddit.com/${user.display_name_prefixed}`, submission.url)
+                } else {
+                  console.log(`---> ${new Date().toISOString()} - Sem atualizações do usuário: https://reddit.com/${user.display_name_prefixed}`);
+                }
+              }
+            } else if (user.url.match(/\/r\//)) {
+              submission = await reddit.getSubreddit(user.display_name_prefixed);
+              if (submission) {
+                if (!await hasLastUpdates(submission.id, user.id)) {
+                  await hubotSendSubmission(robot, submission, user.display_name_prefixed)
+                  await persistLastUpdates(submission, user)
+                  console.log(`---> ${new Date(submission.created_utc * 1000).toISOString()} - Atualização no subreddit: https://reddit.com/${user.display_name_prefixed}`, submission.url)
+                } else {
+                  console.log(`---> ${new Date().toISOString()} - Sem atualizações no subreddit: https://reddit.com/${user.display_name_prefixed}`);
+                }
               }
             }
           }
-          const newSubmissions = await sub.getNew({ limit: 1 })
-          if (newSubmissions.length > 0) {
-            if (!await hasLastUpdates(newSubmissions[0].id, sub.id)) {
-              onRedditUpdates(robot, newSubmissions[0], sub)
-              await persistLastUpdates(newSubmissions[0], sub)
-              console.log(`---> ${new Date(newSubmissions[0].created_utc * 1000).toISOString()} - Atualização no subreddit: https://reddit.com${sub.url}`, newSubmissions[0].url)
-            } else {
-              console.log(`---> sem atualizações no subreddit: https://reddit.com${sub.url}`);
-            }
-          }
         }
+      } catch (err) {
+        robot.send({ user: {}, room: 'nata' }, err);
+        console.log(err);
       }
-    } catch (err) {
-      console.log(err);
-    }
-  }, null, true, 'UTC')
-
+    }, null, true, 'UTC')
+  }
   robot.respond(/quem (voce|você) segue no reddit/i, async msg => {
     try {
-      const users = await reddit.getSubscriptions()
-      users.map(user => {
+      let all;
+      const users = await reddit.client.getSubscriptions();
+      if (!users.isFinished) {
+        const more = await users.fetchAll();
+        all = users.concat(more);
+      } else {
+        all = users;
+      }
+      for await (user of all) {
         msg.reply({
           text: user.name,
           attachments: [{
             title: user.name,
-            title_link: user.link,
-            image_url: user.image
+            title_link: `https://reddit.com${user.url}`,
+            image_url: user.icon_img
           }]
-        })
-      })
+        });
+      }
     } catch (err) {
-      msg.reply(error)
+      msg.reply(err)
     }
   })
 
@@ -117,7 +195,7 @@ module.exports = async (robot) => {
           attachments: [{
             title: `sai de ${user.name}`,
             title_link: user.link,
-            image_url: user.imge
+            image_url: user.image
           }]
         })
       } catch (err) {
@@ -128,8 +206,26 @@ module.exports = async (robot) => {
     }
   })
 
-  robot.respond(/(mostrar |mostra )?(u|ú)ltimo post( de)? (\/)?(u|r)\/[A-Za-z0-9_-]*(\/)?/i, async msg => {
+  robot.respond(/(mostrar |mostra )?(u|ú)ltimo post( de)? (\/)?(u|user|r)\/[A-Za-z0-9_-]*(\/)?/i, async msg => {
+    const match = String(msg.match[0]).match(/(u|user|r)\/[A-Za-z0-9_-]*/i)
+    try {
+      msg.reply('Perai...');
 
+      let submission;
+      if (match && match[1].toLocaleLowerCase() === 'r') {
+        submission = await reddit.getSubreddit(match[0]);
+      } else if (match && (match[1].toLocaleLowerCase() === 'u' || match[1].toLocaleLowerCase() === 'user')) {
+        let user = match[0];
+        if (match[1].toLocaleLowerCase() === 'user') user = match[0].replace('user/', 'u/');
+        submission = await reddit.getSubmissions(user);
+      }
+
+      await hubotRespond(msg, submission, match[0]);
+
+    } catch (error) {
+      msg.reply(error.toString())
+      console.log(error);
+    }
   })
 
   robot.respond(/get (roomId|roomID)/i, async msg => {

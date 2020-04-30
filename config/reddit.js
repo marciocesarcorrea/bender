@@ -1,4 +1,5 @@
 const Snoowrap = require('snoowrap')
+const _ = require('lodash')
 
 const reddit = new Snoowrap({
   userAgent: process.env.REDDIT_USER_AGENT,
@@ -8,10 +9,22 @@ const reddit = new Snoowrap({
   password: process.env.REDDIT_PASS
 });
 
+const getSubreddit = async subreddit => {
+  const submissions = await reddit.getSubreddit(subreddit).getNew({ limit: 10, sort: 'new' });
+  if (submissions.length > 0) {
+    const submissionsOrder = _.orderBy(submissions, ['created_utc'], ['desc']);
+    return submissionsOrder[0];
+  }
+  return null
+}
+
 const getSubmissions = async name => {
   const user = await reddit.getUser(name)
-  const submissions = await user.getSubmissions({ limit: 1 })
-  if (submissions.length > 0) return submissions[0]
+  const submissions = await user.getSubmissions({ limit: 10, sort: 'new' })
+  if (submissions.length > 0) {
+    const submissionsOrder = _.orderBy(submissions, ['created_utc'], ['desc']);
+    return submissionsOrder[0];
+  }
   return null
 }
 
@@ -21,7 +34,7 @@ const getSubscriptions = async () => {
     if (subs && Array.isArray(subs) && subs.length > 0) {
       const ret = subs.map(sub => ({
         id: sub.id,
-        link: `https://reddit.com/${sub.url}`,
+        link: `https://reddit.com${sub.url}`,
         description: sub.public_description,
         name: sub.display_name,
         image: sub.icon_img
@@ -63,6 +76,7 @@ const unSubscribe = async (name) => {
 
 module.exports = {
   client: reddit,
+  getSubreddit,
   getSubmissions,
   getSubscriptions,
   subscribe,

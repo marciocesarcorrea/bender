@@ -130,6 +130,7 @@ module.exports = async (robot) => {
               }
             }
           }
+          console.log(`---> ${new Date().toString()} - Acabou`);
         }
       } catch (err) {
         robot.send({ user: {}, room: 'nata' }, err);

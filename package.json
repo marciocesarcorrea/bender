@@ -29,7 +29,7 @@
     "imgur": "https://github.com/marciocesarcorrea/node-imgur",
     "lodash": "^4.17.19",
     "minimatch": "^3.0.4",
-    "mongoose": "^5.9.9",
+    "mongoose": "^5.11.11",
     "snoowrap": "^1.21.0"
   },
   "devDependencies": {

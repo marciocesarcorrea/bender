@@ -2,7 +2,6 @@ require('../database');
 const CronJob = require('cron').CronJob;
 const reddit = require('../config/reddit');
 const gfycat = require('../config/gfycat');
-const jobTime = require('../config/jobTime');
 const LastUpdates = require('../schemas/LastUpdates');
 
 const hasLastUpdates = async (submissionId, subredditId) => {
@@ -91,8 +90,8 @@ const hubotRespond = async (msg, submission, user) => {
 }
 
 module.exports = async (robot) => {
-  if (process.env.START_JOB === 'true') {
-    const job = new CronJob(jobTime, async () => {
+  if (process.env.JOB_START === 'true' && process.env.JOB_TIME) {
+    const job = new CronJob(process.env.JOB_TIME, async () => {
       try {
         console.log('=========' + new Date().toString() + '=========');
         let all;

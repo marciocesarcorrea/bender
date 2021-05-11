@@ -27,7 +27,7 @@
     "hubot": "^3.3.2",
     "hubot-rocketchat": "^2.0.0",
     "imgur": "https://github.com/marciocesarcorrea/node-imgur",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "minimatch": "^3.0.4",
     "mongoose": "^5.11.11",
     "snoowrap": "^1.21.0"
